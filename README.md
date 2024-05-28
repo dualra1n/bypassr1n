@@ -3,9 +3,9 @@ bypass for dualboot and ios 15, 14, 13
 
 # Usage
 
-Example: ./bypassra1n.sh --tethered 14.3 for downr1n or normal ios
+Example: ./bypassr1n.sh --tethered 14.3 for downr1n or normal ios
 
-example ./bypassra1n.sh --dualboot 14.3 for dualra1n
+example ./bypassr1n.sh --dualboot 14.3 for dualra1n
 
 Options: 
    --dualboot          if you want bypass icloud in the dualboot use this ./bypassr1n.sh --dualboot 14.3
