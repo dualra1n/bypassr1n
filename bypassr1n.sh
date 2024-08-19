@@ -32,13 +32,11 @@ fi
 remote_cmd() {
     sleep 1
     "$dir"/sshpass -p 'alpine' ssh -o StrictHostKeyChecking=no -p2222 root@localhost "$@"
-    sleep 1
 }
 
 remote_cp() {
     sleep 1
     "$dir"/sshpass -p 'alpine' scp -r -o StrictHostKeyChecking=no -P2222 $@
-    sleep 1
 }
 
 step() {
@@ -63,12 +61,12 @@ Usage: $0 [Options] [ subcommand | on ios 15 you have to use palera1n to jailbre
 ./bypass
 
 Options:
-    --dualboot          if you want bypass icloud in the dualboot use this ./bypassr1n.sh --bypass 14.3 --dualboot
-    --jail_palera1n      Use this only when you already jailbroken with semitethered palera1n to avoid disk errors on bypass dualboot. ./bypassr1n.sh --bypass 14.3 --dualboot --jail_palera1n
-    --tethered           bypass the main ios 13,14,15, use this if you have checkra1n or palera1n tethered jailbreak or semitethered (the device will bootloop if you try to boot without jailbreak). ./bypassra1n.sh --bypass 14.3, also if you want to bring back icloud you can use ./bypassra1n.sh --bypass 14.3 --back
-    --dfuhelper         A helper to help get A11 devices into DFU mode from recovery mode
-    --debug             Debug the script
-
+    --dualboot              if you want bypass icloud in the dualboot use this ./bypassr1n.sh --bypass 14.3 --dualboot
+    --jail_palera1n         Use this only when you already jailbroken with semitethered palera1n to avoid disk errors on bypass dualboot. ./bypassr1n.sh --bypass 14.3 --dualboot --jail_palera1n
+    --tethered              bypass the main ios 13,14,15, use this if you have checkra1n or palera1n tethered jailbreak or semitethered (the device will bootloop if you try to boot without jailbreak). ./bypassra1n.sh --bypass 14.3, also if you want to bring back icloud you can use ./bypassra1n.sh --bypass 14.3 --back
+    --debug                 Debug the script
+    --backup-activations    this command will save your activations files into activationsBackup/.
+    --restore-activations   this command will put your activations files into the device.
 Subcommands:
     clean               Deletes the created boot files
 
@@ -95,17 +93,14 @@ parse_opt() {
         --jail_palera1n)
             jail_palera1n=1
             ;;
-        --dfuhelper)
-            dfuhelper=1
-            ;;
-        --dfu)
-            echo "[!] DFU mode devices are now automatically detected and --dfu is deprecated"
-            ;;
-        --restorerootfs)
-            restorerootfs=1
-            ;;
         --debug)
             debug=1
+            ;;
+        --backup-activations)
+            backup_activations=1
+            ;;
+        --restore-activations)
+            restore_activations=1
             ;;
         --help)
             print_help
@@ -290,6 +285,29 @@ _kill_if_running() {
     fi
 }
 
+ask_reboot_or_exit() {
+    while true; do
+        echo -n "Would you like to reboot your device or exit? (reboot/exit): "
+        read -r choice
+
+        case $choice in
+            reboot)
+                echo "[*] Rebooting the device..."
+                remote_cmd "/usr/sbin/nvram auto-boot=true"
+                remote_cmd "/sbin/reboot"
+                break
+                ;;
+            exit)
+                echo "[*] Exiting the script..."
+                break;
+                ;;
+            *)
+                echo "[!] Invalid option. Please enter 'reboot' or 'exit'."
+                ;;
+        esac
+    done
+}
+
 _exit_handler() {
     if [ "$os" = "Darwin" ]; then
         killall -CONT AMPDevicesAgent AMPDeviceDiscoveryAgent MobileDeviceUpdater || true
@@ -314,7 +332,7 @@ trap _exit_handler EXIT
 
 # Prevent Finder from complaning
 if [ "$os" = "Linux"  ]; then
-    chmod +x getSSHOnLinux.sh
+    /bin/chmod +x getSSHOnLinux.sh
     sudo bash ./getSSHOnLinux.sh &
 fi
 
@@ -355,7 +373,7 @@ else
     mkdir work
 fi
 
-chmod +x "$dir"/*
+/bin/chmod +x "$dir"/*
 #if [ "$os" = 'Darwin' ]; then
 #    xattr -d com.apple.quarantine "$dir"/*
 #fi
@@ -432,6 +450,7 @@ echo "[*] Getting device info..."
 cpid=$(_info recovery CPID)
 model=$(_info recovery MODEL)
 deviceid=$(_info recovery PRODUCT)
+ECID=$(_info recovery ECID)
 
 echo "$cpid"
 echo "$model"
@@ -463,9 +482,9 @@ if [ true ]; then
     mkdir -p blobs
 
     cd ramdisk
-    chmod +x sshrd.sh
+    /bin/chmod +x sshrd.sh
     echo "[*] Creating ramdisk"
-    ./sshrd.sh 15.6 
+    ./sshrd.sh $(if [[ $version == 16.* ]]; then echo "16.0.3"; else echo "15.6"; fi)
 
     echo "[*] Booting ramdisk"
     ./sshrd.sh boot
@@ -532,6 +551,93 @@ if [ true ]; then
     echo $prebootB
 
     remote_cmd "/usr/bin/mount_filesystems"
+
+    if [ "$backup_activations" = "1" ]; then
+        echo "[*] backup activations files ..."
+        activationsDir=$(remote_cmd 'find /mnt2/containers/Data/System/ -type d | grep internal | sed "s|/internal.*||"')
+        
+        if ! remote_cmd "[ -f "$activationsDir/activation_records/activation_record.plist" ]"; then
+            echo "[*] sadly we couldn't find the activation file, it could be because your device is not activated"
+            ask_reboot_or_exit
+            exit;
+        fi
+
+        echo "[*] activation file detected"
+        echo "[*] backuping up ..."
+        remote_cmd "mkdir -p /mnt1/activationsBackup/"
+        remote_cmd "cp -rf $activationsDir/activation_records /mnt1/activationsBackup"
+        remote_cmd "cp -rf $activationsDir/internal /mnt1/activationsBackup"
+        remote_cmd "cp -rf /mnt2/mobile/Library/FairPlay /mnt1/activationsBackup"
+        remote_cmd "cp -rf /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist /mnt1/activationsBackup"
+
+        mkdir -p activationsBackup/
+        mkdir -p "activationsBackup/$ECID/"
+        
+        remote_cp root@localhost:/mnt1/activationsBackup/ "activationsBackup/$ECID/"
+        echo "[*] we saved activations files in activationsBackup/$ECID/"
+
+        echo "[*] Rebooting the device..."
+        remote_cmd "/usr/sbin/nvram auto-boot=true"
+        remote_cmd "/sbin/reboot"
+        exit 0;
+    fi
+
+    if [ "$restore_activations" = "1" ]; then
+
+        if [ ! -f "activationsBackup/$ECID/activationsBackup/activation_records/activation_record.plist" ]; then
+            echo "[!] it looks like you don't have activations files saved in activationsBackup/$ECID"
+            ask_reboot_or_exit
+            exit;
+        fi
+
+        echo "[*] restoring activations files ..."
+        activationsDir=$(remote_cmd 'find /mnt2/containers/Data/System/ -type d | grep internal | sed "s|/internal.*||"')
+        
+        if ! remote_cmd "[ ! -f "$activationsDir/internal" ]"; then
+            echo "[*] sadly we couldn't find the activaton directory in /mnt2/containers/Data/System/"
+            ask_reboot_or_exit
+            exit;
+        fi
+
+        echo "[*] activation directory detected in $activationsDir"
+        echo "[*] copying activations files"
+        remote_cmd "chflags -fR nouchg /mnt2/mobile/Media/Downloads/activationsBackup"
+        remote_cmd "chflags -fR nouchg $activationsDir/activation_records/ $activationsDir/internal/data_ark.plist /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
+
+        remote_cp activationsBackup/"$ECID"/activationsBackup root@localhost:/mnt2/mobile/Media/Downloads/
+        
+        remote_cmd "/usr/sbin/chown -R mobile:mobile /mnt2/mobile/Media/Downloads/activationsBackup"
+        remote_cmd "/bin/chmod -R 755 /mnt2/mobile/Media/Downloads/activationsBackup"
+        remote_cmd "/bin/chmod 644 /mnt2/mobile/Media/Downloads/activationsBackup/internal/data_ark.plist /mnt2/mobile/Media/Downloads/activationsBackup/activation_records/activation_record.plist /mnt2/mobile/Media/Downloads/activationsBackup/com.apple.commcenter.device_specific_nobackup.plist"
+        remote_cmd "/bin/chmod 664 /mnt2/mobile/Media/Downloads/activationsBackup/FairPlay/iTunes_Control/iTunes/IC-Info.sisv"
+
+
+        remote_cmd "cp -rf /mnt2/mobile/Media/Downloads/activationsBackup/activation_records $activationsDir/"
+        remote_cmd "cp -rf /mnt2/mobile/Media/Downloads/activationsBackup/internal $activationsDir/"
+        remote_cmd "cp -rf /mnt2/mobile/Media/Downloads/activationsBackup/FairPlay /mnt2/mobile/Library/"
+        remote_cmd "cp -rf /mnt2/mobile/Media/Downloads/activationsBackup/com.apple.commcenter.device_specific_nobackup.plist /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
+ 
+        remote_cmd "/bin/chmod -R 755 /mnt2/mobile/Library/FairPlay/"
+        remote_cmd "/usr/sbin/chown -R mobile:mobile /mnt2/mobile/Library/FairPlay/"
+        remote_cmd "/bin/chmod 664 /mnt2/mobile/Library/FairPlay/iTunes_Control/iTunes/IC-Info.sisv"
+        
+        remote_cmd "/bin/chmod -R 777 $activationsDir/activation_records/"
+        remote_cmd "chflags -R uchg $activationsDir/activation_records/"
+
+        remote_cmd "/bin/chmod 755 $activationsDir/internal/data_ark.plist"
+        remote_cmd "chflags -R uchg $activationsDir/internal/data_ark.plist"
+
+        remote_cmd "/usr/sbin/chown root:mobile /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
+        remote_cmd "/bin/chmod 755 /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
+        remote_cmd "chflags uchg /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
+
+        echo "[*] we restored activation files from activationsBackup/$ECID/"
+
+        echo "[*] Rebooting the device..."
+        remote_cmd "/usr/sbin/nvram auto-boot=true"
+        remote_cmd "/sbin/reboot"
+        exit 0;
+    fi
 
     has_active=$(remote_cmd "ls /mnt6/active" 2> /dev/null)
     if [ ! "$has_active" = "/mnt6/active" ]; then
