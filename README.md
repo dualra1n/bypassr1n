@@ -1,5 +1,5 @@
 # bypassr1n
-bypass for dualboot and ios 15, 14, 13
+jump setup on dualbooted devices and downgraded for ios 15, 14, 13
 
 # Usage
 
@@ -17,10 +17,14 @@ Options:
     --tethered            to bypass main ios, use this if you have checkra1n or palera1n tethered jailbreak (the device will bootloop if you try to boot without jailbreak). ./
     bypassra1n.sh --tethered 14.3
 
+    --backup-activations    this command will save your activations files into activationsBackup/. so later you can restore them
+    --restore-activations   this command will put your activations files into the device.
+
     --back              if you want to bring back i cloud you can use for example ./bypassra1n.sh --tethered 14.3 --back (tethered you can change to kind of jailbreak like --semitethered or --dualboot)
 
     --dfuhelper         A helper to help get A11 devices into DFU mode from recovery mode
     --debug             Debug the script
+
 
 _ _ _
 

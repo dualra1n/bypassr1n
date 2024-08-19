@@ -7,16 +7,20 @@ class MainWindow(QDialog):
         self.setWindowTitle('Bypassr1n-GUI')
         self.setLayout(QVBoxLayout())
         self.version_combo = QComboBox()
-        self.version_combo.addItems(['12', '13', '14', '15'])
+        self.version_combo.addItems(['12', '13', '14', '15', '16'])
         self.layout().addWidget(QLabel('Select iOS version:'))
         self.layout().addWidget(self.version_combo)
         self.button_dualboot = QPushButton('Bypass DualBoot')
         self.button_tethered = QPushButton('Tethered Bypass')
         self.button_jailbreak = QPushButton('run specificing semi-thered palera1n jailbreak')
+        self.backup_Activations_Files = QPushButton('Backup Activations Files')
+        self.restore_Activations_Files = QPushButton('Restore Activations Files')
         self.button_rec = QPushButton('Exit Recovery Mode')
         self.layout().addWidget(self.button_dualboot)
         self.layout().addWidget(self.button_tethered)
         self.layout().addWidget(self.button_jailbreak)
+        self.layout().addWidget(self.backup_Activations_Files)
+        self.layout().addWidget(self.restore_Activations_Files)
         self.layout().addWidget(self.button_rec)
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
@@ -24,6 +28,8 @@ class MainWindow(QDialog):
         self.button_dualboot.clicked.connect(self.execute_dualboot)
         self.button_jailbreak.clicked.connect(self.execute_jailbreak)
         self.button_tethered.clicked.connect(self.execute_tethered)
+        self.backup_Activations_Files.clicked.connect(self.backupActivations)
+        self.restore_Activations_Files.clicked.connect(self.restoreActivations)
         self.button_rec.clicked.connect(self.execute_rec)
 
         self.layout().addWidget(QLabel('GUI Made By RIFOX'))
@@ -58,6 +64,16 @@ class MainWindow(QDialog):
     def execute_jailbreak(self):
         version = self.version_combo.currentText()
         command = ['/usr/bin/sudo', './bypassr1n.sh', '--dualboot', version, '--jail_palera1n']
+        self.execute_command(command)
+
+    def backupActivations(self):
+        version = self.version_combo.currentText()
+        command = ['/usr/bin/sudo', './bypassr1n.sh', '--backup-activations', version]
+        self.execute_command(command)
+        
+    def restoreActivations(self):
+        version = self.version_combo.currentText()
+        command = ['/usr/bin/sudo', './bypassr1n.sh', '--restore-activations', version]
         self.execute_command(command)
 
     def execute_rec(self):
