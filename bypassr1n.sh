@@ -601,12 +601,13 @@ if [ true ]; then
 
         echo "[*] activation directory detected in $activationsDir"
         echo "[*] copying activations files"
-        remote_cmd "chflags -fR nouchg /mnt2/mobile/Media/Downloads/activationsBackup"
         remote_cmd "chflags -fR nouchg $activationsDir/activation_records/ $activationsDir/internal/data_ark.plist /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
 
         remote_cp activationsBackup/"$ECID"/activationsBackup root@localhost:/mnt2/mobile/Media/Downloads/
+        remote_cmd "chflags -fR nouchg /mnt2/mobile/Media/Downloads/activationsBackup"
         
         remote_cmd "/usr/sbin/chown -R mobile:mobile /mnt2/mobile/Media/Downloads/activationsBackup"
+
         remote_cmd "/bin/chmod -R 755 /mnt2/mobile/Media/Downloads/activationsBackup"
         remote_cmd "/bin/chmod 644 /mnt2/mobile/Media/Downloads/activationsBackup/internal/data_ark.plist /mnt2/mobile/Media/Downloads/activationsBackup/activation_records/activation_record.plist /mnt2/mobile/Media/Downloads/activationsBackup/com.apple.commcenter.device_specific_nobackup.plist"
         remote_cmd "/bin/chmod 664 /mnt2/mobile/Media/Downloads/activationsBackup/FairPlay/iTunes_Control/iTunes/IC-Info.sisv"
