@@ -601,8 +601,20 @@ if [ true ]; then
 
         echo "[*] activation directory detected in $activationsDir"
         echo "[*] copying activations files"
-        remote_cmd "chflags -fR nouchg $activationsDir/activation_records/ $activationsDir/internal/data_ark.plist /mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist"
+        
+        remote_cmd "
+        if [ -d \"$activationsDir/activation_records/\" ]; then
+            chflags -fR nouchg \"$activationsDir/activation_records/\";
+        fi
 
+        if [ -f \"$activationsDir/internal/data_ark.plist\" ]; then
+            chflags -fR nouchg \"$activationsDir/internal/data_ark.plist\";
+        fi
+
+        if [ -f \"/mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist\" ]; then
+            chflags -fR nouchg \"/mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist\";
+        fi
+        "
         remote_cp activationsBackup/"$ECID"/activationsBackup root@localhost:/mnt2/mobile/Media/Downloads/
         remote_cmd "chflags -fR nouchg /mnt2/mobile/Media/Downloads/activationsBackup"
         
