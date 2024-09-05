@@ -593,10 +593,10 @@ if [ true ]; then
         echo "[*] restoring activations files ..."
         activationsDir=$(remote_cmd 'find /mnt2/containers/Data/System/ -type d | grep internal | sed "s|/internal.*||"')
         
-        if ! remote_cmd "[ ! -f "$activationsDir/internal" ]"; then
+        if ! remote_cmd "[ ! -f \"$activationsDir/internal\" ]"; then
             echo "[*] sadly we couldn't find the activaton directory in /mnt2/containers/Data/System/"
             ask_reboot_or_exit
-            exit;
+            exit
         fi
 
         echo "[*] activation directory detected in $activationsDir"
