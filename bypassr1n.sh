@@ -621,6 +621,8 @@ if [ true ]; then
             chflags -fR nouchg \"/mnt2/wireless/Library/Preferences/com.apple.commcenter.device_specific_nobackup.plist\";
         fi
         "
+
+        remote_cmd "mkdir -p /mnt2/mobile/Media/Downloads/activationsBackup"
         remote_cp activationsBackup/"$ECID"/activationsBackup root@localhost:/mnt2/mobile/Media/Downloads/
         remote_cmd "chflags -fR nouchg /mnt2/mobile/Media/Downloads/activationsBackup"
         
