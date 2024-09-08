@@ -550,8 +550,14 @@ if [ true ]; then
     echo $dataB
     echo $prebootB
 
-    remote_cmd "/usr/bin/mount_filesystems"
+    if [ "$backup_activations" = "1" ] || [ "$restore_activations" = "1" ] && [ "$dualboot" = "1" ]; then
+        remote_cmd "/sbin/mount_apfs /dev/disk0s1s${disk} /mnt1/"
+        remote_cmd "/sbin/mount_apfs /dev/disk0s1s${dataB} /mnt2/"
+    else
+        remote_cmd "/usr/bin/mount_filesystems"
+    fi
 
+    
     if [ "$backup_activations" = "1" ]; then
         echo "[*] backup activations files ..."
         activationsDir=$(remote_cmd 'find /mnt2/containers/Data/System/ -type d | grep internal | sed "s|/internal.*||"')
